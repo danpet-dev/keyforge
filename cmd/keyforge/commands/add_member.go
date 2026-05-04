@@ -49,7 +49,9 @@ func init() {
 	addMemberCmd.Flags().StringVarP(&addMemberFingerprint, "fingerprint", "f", "", "Use existing PGP key fingerprint")
 	addMemberCmd.Flags().StringVarP(&addMemberPublicKey, "public-key", "p", "", "Use existing Age public key")
 
-	addMemberCmd.MarkFlagRequired("name")
+	if err := addMemberCmd.MarkFlagRequired("name"); err != nil {
+		panic(err)
+	}
 }
 
 func runAddMember(cmd *cobra.Command, args []string) error {
@@ -89,7 +91,7 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("failed to generate Age key: %w", err)
 			}
-			
+
 			comment := fmt.Sprintf("%s - created by keyforge", addMemberName)
 			if err := keys.SaveAgeKey(identity, comment); err != nil {
 				return fmt.Errorf("failed to save Age key: %w", err)

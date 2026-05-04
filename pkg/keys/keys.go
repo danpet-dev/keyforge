@@ -14,9 +14,9 @@ import (
 
 // Key represents a PGP or Age key
 type Key struct {
-	Type        string    // "pgp" or "age"
-	Fingerprint string    // For PGP
-	PublicKey   string    // For Age
+	Type        string // "pgp" or "age"
+	Fingerprint string // For PGP
+	PublicKey   string // For Age
 	Name        string
 	Email       string
 	Created     time.Time
@@ -100,7 +100,7 @@ Expire-Date: %dy
 
 	cmd := exec.Command("gpg", "--batch", "--generate-key")
 	cmd.Stdin = strings.NewReader(batch)
-	
+
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -188,7 +188,7 @@ func GenerateAgeKey() (*age.X25519Identity, error) {
 }
 
 // SaveAgeKey saves an Age key to the default location (~/.config/sops/age/keys.txt)
-func SaveAgeKey(identity *age.X25519Identity, comment string) error {
+func SaveAgeKey(identity *age.X25519Identity, comment string) (err error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
@@ -212,18 +212,28 @@ func SaveAgeKey(identity *age.X25519Identity, comment string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open keys file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("failed to close keys file: %w", cerr)
+		}
+	}()
 
 	// Add comment if provided
 	if comment != "" {
 		if existingContent != "" && !strings.HasSuffix(existingContent, "\n") {
-			f.WriteString("\n")
+			if _, err := f.WriteString("\n"); err != nil {
+				return fmt.Errorf("failed writing newline to keys file: %w", err)
+			}
 		}
-		f.WriteString(fmt.Sprintf("# %s\n", comment))
+		if _, err := f.WriteString(fmt.Sprintf("# %s\n", comment)); err != nil {
+			return fmt.Errorf("failed writing comment to keys file: %w", err)
+		}
 	}
 
 	// Write private key
-	f.WriteString(identity.String() + "\n")
+	if _, err := f.WriteString(identity.String() + "\n"); err != nil {
+		return fmt.Errorf("failed writing age identity to keys file: %w", err)
+	}
 
 	return nil
 }

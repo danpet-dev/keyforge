@@ -21,8 +21,12 @@ func TestFindSopsFiles(t *testing.T) {
 
 	for _, file := range files {
 		fullPath := filepath.Join(tempDir, file)
-		os.MkdirAll(filepath.Dir(fullPath), 0755)
-		os.WriteFile(fullPath, []byte("test"), 0644)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			t.Fatalf("MkdirAll(%s) failed: %v", filepath.Dir(fullPath), err)
+		}
+		if err := os.WriteFile(fullPath, []byte("test"), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) failed: %v", fullPath, err)
+		}
 	}
 
 	// Find SOPS files
@@ -47,7 +51,7 @@ func TestFindSopsFiles(t *testing.T) {
 func TestIsSopsInstalled(t *testing.T) {
 	// This test depends on system environment
 	installed := IsSopsInstalled()
-	
+
 	// Log result for debugging (test passes regardless)
 	if installed {
 		t.Log("SOPS is installed")

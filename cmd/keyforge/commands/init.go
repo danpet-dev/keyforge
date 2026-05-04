@@ -39,7 +39,9 @@ func init() {
 	initCmd.Flags().StringVarP(&initKeyType, "key-type", "t", "pgp", "Key type: pgp or age")
 	initCmd.Flags().BoolVarP(&initGenerateKey, "generate-key", "g", false, "Generate a new PGP or Age key")
 
-	initCmd.MarkFlagRequired("project")
+	if err := initCmd.MarkFlagRequired("project"); err != nil {
+		panic(err)
+	}
 }
 
 func runInit(cmd *cobra.Command, args []string) error {

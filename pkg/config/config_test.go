@@ -32,7 +32,11 @@ func TestGenerateTemplate(t *testing.T) {
 
 func TestLoadSave(t *testing.T) {
 	tempFile := "/tmp/test-sops.yaml"
-	defer os.Remove(tempFile)
+	defer func() {
+		if err := os.Remove(tempFile); err != nil && !os.IsNotExist(err) {
+			t.Fatalf("failed to remove temp file %s: %v", tempFile, err)
+		}
+	}()
 
 	// Create test config
 	cfg := &SopsConfig{

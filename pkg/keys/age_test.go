@@ -40,8 +40,14 @@ func TestSaveAndListAgeKeys(t *testing.T) {
 
 	// Override home directory for test
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	if err := os.Setenv("HOME", tmpDir); err != nil {
+		t.Fatalf("failed to set HOME: %v", err)
+	}
+	defer func() {
+		if err := os.Setenv("HOME", originalHome); err != nil {
+			t.Fatalf("failed to restore HOME: %v", err)
+		}
+	}()
 
 	// Generate and save a key
 	identity, err := GenerateAgeKey()
@@ -88,8 +94,14 @@ func TestListAgeKeysEmptyDir(t *testing.T) {
 
 	// Override home directory for test
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	if err := os.Setenv("HOME", tmpDir); err != nil {
+		t.Fatalf("failed to set HOME: %v", err)
+	}
+	defer func() {
+		if err := os.Setenv("HOME", originalHome); err != nil {
+			t.Fatalf("failed to restore HOME: %v", err)
+		}
+	}()
 
 	// List keys (should return empty list, not error)
 	keys, err := ListAgeKeys()
