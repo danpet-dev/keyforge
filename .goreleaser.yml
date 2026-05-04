@@ -54,16 +54,21 @@ release:
   draft: false
   prerelease: auto
 
-# Homebrew tap disabled for now - will be enabled in a future release
-# brews:
-#   - name: keyforge
-#     repository:
-#       owner: danpet-dev
-#       name: homebrew-tap
-#     folder: Formula
-#     homepage: https://github.com/danpet-dev/keyforge
-#     description: SOPS multi-key lifecycle management CLI
-#     license: MIT
+brews:
+  - name: keyforge
+    repository:
+      owner: danpet-dev
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/danpet-dev/keyforge
+    description: SOPS multi-key lifecycle management CLI
+    license: MIT
+    # Optional: Runtime dependencies (Homebrew installiert diese automatisch mit)
+    dependencies:
+      - name: sops
+      - name: gnupg
+      - name: age
 
 dockers:
   - image_templates:
