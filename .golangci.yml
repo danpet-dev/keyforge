@@ -1,7 +1,6 @@
 linters:
   enable:
     - gofmt
-    - govet
     - errcheck
     - staticcheck
     - unused
@@ -10,8 +9,6 @@ linters:
     - typecheck
 
 linters-settings:
-  govet:
-    check-shadowing: false
   errcheck:
     check-blank: false
 
