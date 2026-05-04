@@ -37,7 +37,7 @@ func init() {
 
 	initCmd.Flags().StringVarP(&initProject, "project", "p", "", "Project name (required)")
 	initCmd.Flags().StringVarP(&initKeyType, "key-type", "t", "pgp", "Key type: pgp or age")
-	initCmd.Flags().BoolVarP(&initGenerateKey, "generate-key", "g", false, "Generate a new PGP key")
+	initCmd.Flags().BoolVarP(&initGenerateKey, "generate-key", "g", false, "Generate a new PGP or Age key")
 
 	initCmd.MarkFlagRequired("project")
 }
@@ -62,21 +62,35 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Generate key if requested
 	if initGenerateKey {
-		if initKeyType != "pgp" {
-			return fmt.Errorf("key generation is only supported for PGP keys")
+		if initKeyType == "pgp" {
+			email := fmt.Sprintf("admin@%s.local", initProject)
+			name := fmt.Sprintf("%s Admin", initProject)
+
+			fmt.Printf("Generating PGP key for %s (%s)...\n", name, email)
+			fingerprint, err := keys.GeneratePGPKey(name, email, 2)
+			if err != nil {
+				return fmt.Errorf("failed to generate PGP key: %w", err)
+			}
+
+			fmt.Printf("✓ Generated PGP key: %s\n", fingerprint)
+			masterKey = fingerprint
+		} else if initKeyType == "age" {
+			fmt.Printf("Generating Age key for %s...\n", initProject)
+			identity, err := keys.GenerateAgeKey()
+			if err != nil {
+				return fmt.Errorf("failed to generate Age key: %w", err)
+			}
+
+			// Save to default location
+			comment := fmt.Sprintf("%s master key - created by keyforge", initProject)
+			if err := keys.SaveAgeKey(identity, comment); err != nil {
+				return fmt.Errorf("failed to save Age key: %w", err)
+			}
+
+			masterKey = identity.Recipient().String()
+			fmt.Printf("✓ Generated Age key: %s\n", masterKey)
+			fmt.Printf("✓ Saved to ~/.config/sops/age/keys.txt\n")
 		}
-
-		email := fmt.Sprintf("admin@%s.local", initProject)
-		name := fmt.Sprintf("%s Admin", initProject)
-
-		fmt.Printf("Generating PGP key for %s (%s)...\n", name, email)
-		fingerprint, err := keys.GeneratePGPKey(name, email, 2)
-		if err != nil {
-			return fmt.Errorf("failed to generate PGP key: %w", err)
-		}
-
-		fmt.Printf("✓ Generated PGP key: %s\n", fingerprint)
-		masterKey = fingerprint
 	} else {
 		// Use existing keys
 		if initKeyType == "pgp" {
@@ -92,8 +106,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 			// Use the first key as master key
 			masterKey = keyList[0].Fingerprint
 			fmt.Printf("Using existing PGP key: %s (%s)\n", keyList[0].Fingerprint, keyList[0].Email)
-		} else {
-			return fmt.Errorf("age keys must be specified manually (not yet implemented)")
+		} else if initKeyType == "age" {
+			keyList, err := keys.ListAgeKeys()
+			if err != nil {
+				return fmt.Errorf("failed to list Age keys: %w", err)
+			}
+
+			if len(keyList) == 0 {
+				return fmt.Errorf("no Age keys found. Use --generate-key or create a key manually")
+			}
+
+			// Use the first key as master key
+			masterKey = keyList[0].PublicKey
+			fmt.Printf("Using existing Age key: %s\n", keyList[0].PublicKey)
 		}
 	}
 

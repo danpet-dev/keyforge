@@ -6,11 +6,14 @@ KeyForge is a CLI tool that simplifies SOPS multi-key lifecycle management. It a
 
 ## Features
 
-- 🔑 **Simplified Key Management**: Add team members and rotate keys with single commands
-- 🔄 **Automated Key Updates**: Update all encrypted files with `keyforge update-all`
+- 🔑 **Multi-Key Support**: PGP and Age key management
+- 🔄 **Automated Key Rotation**: Secure key rotation with zero-downtime re-encryption
+- 👥 **Team Onboarding**: Add team members and rotate keys with single commands
+- 📊 **Security Audit**: Track who has access to which secrets
 - ✅ **Validation**: Check `.sops.yaml` syntax and key availability
 - 🛠️ **Best Practices**: Generate `.sops.yaml` with proven multi-environment patterns
 - 📝 **Smart Edit**: Wrapper for `sops` with auto-detection of file formats
+- 🐳 **CI/CD Ready**: Docker image for pipeline integration
 
 ## Installation
 
@@ -29,14 +32,39 @@ sudo mv keyforge /usr/local/bin/
 go install github.com/danpet-dev/keyforge/cmd/keyforge@latest
 ```
 
+### Docker
+
+```bash
+# Pull image
+docker pull ghcr.io/danpet-dev/keyforge:latest
+
+# Run command
+docker run --rm -v $(pwd):/workspace ghcr.io/danpet-dev/keyforge:latest validate
+
+# With Age keys
+docker run --rm \
+  -v $(pwd):/workspace \
+  -v ~/.config/sops/age:/home/keyforge/.config/sops/age:ro \
+  ghcr.io/danpet-dev/keyforge:latest audit
+```
+
 ## Quick Start
 
 ```bash
-# Initialize .sops.yaml for your project
-keyforge init --project my-project
+# Initialize .sops.yaml with PGP keys (default)
+keyforge init --project my-project --generate-key
+
+# Or use Age keys for faster encryption
+keyforge init --project my-project --key-type age --generate-key
 
 # Add a team member
-keyforge add-member --name "Alice" --email alice@example.com --environments dev,test,prod
+keyforge add-member --name "Alice" --email alice@example.com --key-type age --generate-key
+
+# Audit access permissions
+keyforge audit
+
+# Rotate encryption keys (recommended every 6-12 months)
+keyforge rotate-keys --key-type age
 
 # Update all encrypted files with new keys
 keyforge update-all
@@ -79,6 +107,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Status
 
-🚧 **Alpha** - Under active development. Breaking changes may occur.
+**Current Version:** v0.2.0
 
-**Target:** v0.1.0 release (MVP commands: init, add-member, update-all, validate, edit)
+- ✅ **MVP Complete** (v0.1.0): init, add-member, update-all, validate, edit
+- ✅ **Enhanced Features** (v0.2.0): Age key support, rotate-keys, audit, Docker image
+- 🚧 **In Development**: Comprehensive documentation, integration tests
+
+See [CHANGELOG.md](CHANGELOG.md) for full release history.

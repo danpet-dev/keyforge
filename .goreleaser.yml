@@ -63,3 +63,43 @@ brews:
     homepage: https://github.com/danpet-dev/keyforge
     description: SOPS multi-key lifecycle management CLI
     license: MIT
+
+dockers:
+  - image_templates:
+      - "ghcr.io/danpet-dev/keyforge:{{ .Version }}-amd64"
+      - "ghcr.io/danpet-dev/keyforge:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    goos: linux
+    goarch: amd64
+
+  - image_templates:
+      - "ghcr.io/danpet-dev/keyforge:{{ .Version }}-arm64"
+      - "ghcr.io/danpet-dev/keyforge:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    goos: linux
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/danpet-dev/keyforge:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/danpet-dev/keyforge:{{ .Version }}-amd64"
+      - "ghcr.io/danpet-dev/keyforge:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/danpet-dev/keyforge:latest"
+    image_templates:
+      - "ghcr.io/danpet-dev/keyforge:latest-amd64"
+      - "ghcr.io/danpet-dev/keyforge:latest-arm64"

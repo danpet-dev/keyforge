@@ -55,6 +55,9 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✓ .sops.yaml syntax is valid\n")
 	fmt.Printf("✓ Found %d creation rules\n", len(cfg.CreationRules))
 
+	var missingKeys []string
+	var expiringKeys []string
+
 	// Check PGP keys
 	if keys.IsGPGInstalled() {
 		keyList, err := keys.ListPGPKeys()
@@ -71,45 +74,79 @@ func runValidate(cmd *cobra.Command, args []string) error {
 		}
 
 		// Check each rule
-		var missingKeys []string
-		var expiringKeys []string
-
 		for i, rule := range cfg.CreationRules {
-			fmt.Printf("\nRule %d: %s\n", i+1, rule.PathRegex)
-
 			pgpKeys := rule.GetPGPKeys()
-			for _, fp := range pgpKeys {
-				key, exists := availableKeys[fp]
-				if !exists {
-					missingKeys = append(missingKeys, fp)
-					fmt.Printf("  ❌ Missing key: %s\n", fp)
-					continue
-				}
+			if len(pgpKeys) > 0 {
+				fmt.Printf("\nRule %d: %s (PGP)\n", i+1, rule.PathRegex)
 
-				fmt.Printf("  ✓ %s (%s)\n", fp, key.Email)
+				for _, fp := range pgpKeys {
+					key, exists := availableKeys[fp]
+					if !exists {
+						missingKeys = append(missingKeys, fp)
+						fmt.Printf("  ❌ Missing key: %s\n", fp)
+						continue
+					}
 
-				// Check expiration
-				if expired, msg := keys.CheckKeyExpiration(key); expired {
-					expiringKeys = append(expiringKeys, fmt.Sprintf("%s: %s", fp, msg))
-					fmt.Printf("    ⚠️  %s\n", msg)
+					fmt.Printf("  ✓ %s (%s)\n", fp, key.Email)
+
+					// Check expiration
+					if expired, msg := keys.CheckKeyExpiration(key); expired {
+						expiringKeys = append(expiringKeys, fmt.Sprintf("%s: %s", fp, msg))
+						fmt.Printf("    ⚠️  %s\n", msg)
+					}
 				}
 			}
 		}
-
-		// Summary
-		fmt.Println("\n📋 Summary:")
-		if len(missingKeys) > 0 {
-			fmt.Printf("  ❌ %d missing keys\n", len(missingKeys))
-			return fmt.Errorf("validation failed: missing keys")
-		}
-
-		if len(expiringKeys) > 0 {
-			fmt.Printf("  ⚠️  %d expiring/expired keys\n", len(expiringKeys))
-		} else {
-			fmt.Println("  ✓ All keys valid and available")
-		}
 	} else {
-		fmt.Println("⚠️  GPG not installed, skipping key validation")
+		fmt.Println("⚠️  GPG not installed, skipping PGP key validation")
+	}
+
+	// Check Age keys
+	ageKeyList, err := keys.ListAgeKeys()
+	if err == nil && len(ageKeyList) > 0 {
+		fmt.Printf("\n🔑 Age Keys available: %d\n", len(ageKeyList))
+
+		// Build map of available age keys
+		availableAgeKeys := make(map[string]keys.Key)
+		for _, key := range ageKeyList {
+			availableAgeKeys[key.PublicKey] = key
+		}
+
+		// Check each rule
+		for i, rule := range cfg.CreationRules {
+			ageKeys := rule.GetAgeKeys()
+			if len(ageKeys) > 0 {
+				fmt.Printf("\nRule %d: %s (Age)\n", i+1, rule.PathRegex)
+
+				for _, pubKey := range ageKeys {
+					key, exists := availableAgeKeys[pubKey]
+					if !exists {
+						missingKeys = append(missingKeys, pubKey)
+						fmt.Printf("  ❌ Missing key: %s\n", pubKey)
+						continue
+					}
+
+					name := key.Name
+					if name == "" {
+						name = "unnamed"
+					}
+					fmt.Printf("  ✓ %s (%s)\n", pubKey, name)
+				}
+			}
+		}
+	}
+
+	// Summary
+	fmt.Println("\n📋 Summary:")
+	if len(missingKeys) > 0 {
+		fmt.Printf("  ❌ %d missing keys\n", len(missingKeys))
+		return fmt.Errorf("validation failed: missing keys")
+	}
+
+	if len(expiringKeys) > 0 {
+		fmt.Printf("  ⚠️  %d expiring/expired keys\n", len(expiringKeys))
+	} else {
+		fmt.Println("  ✓ All keys valid and available")
 	}
 
 	// Find encrypted files

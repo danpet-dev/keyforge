@@ -3,9 +3,13 @@ package keys
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"filippo.io/age"
 )
 
 // Key represents a PGP or Age key
@@ -168,5 +172,125 @@ func parseTimestamp(ts string) (time.Time, error) {
 // IsGPGInstalled checks if GPG is available in PATH
 func IsGPGInstalled() bool {
 	_, err := exec.LookPath("gpg")
+	return err == nil
+}
+
+// --- Age Key Functions ---
+
+// GenerateAgeKey generates a new Age key pair
+func GenerateAgeKey() (*age.X25519Identity, error) {
+	identity, err := age.GenerateX25519Identity()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate age key: %w", err)
+	}
+
+	return identity, nil
+}
+
+// SaveAgeKey saves an Age key to the default location (~/.config/sops/age/keys.txt)
+func SaveAgeKey(identity *age.X25519Identity, comment string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	ageDir := filepath.Join(homeDir, ".config", "sops", "age")
+	if err := os.MkdirAll(ageDir, 0700); err != nil {
+		return fmt.Errorf("failed to create age directory: %w", err)
+	}
+
+	keysFile := filepath.Join(ageDir, "keys.txt")
+
+	// Check if file exists
+	var existingContent string
+	if data, err := os.ReadFile(keysFile); err == nil {
+		existingContent = string(data)
+	}
+
+	// Append new key
+	f, err := os.OpenFile(keysFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to open keys file: %w", err)
+	}
+	defer f.Close()
+
+	// Add comment if provided
+	if comment != "" {
+		if existingContent != "" && !strings.HasSuffix(existingContent, "\n") {
+			f.WriteString("\n")
+		}
+		f.WriteString(fmt.Sprintf("# %s\n", comment))
+	}
+
+	// Write private key
+	f.WriteString(identity.String() + "\n")
+
+	return nil
+}
+
+// ListAgeKeys lists Age keys from ~/.config/sops/age/keys.txt
+func ListAgeKeys() ([]Key, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	keysFile := filepath.Join(homeDir, ".config", "sops", "age", "keys.txt")
+	data, err := os.ReadFile(keysFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []Key{}, nil
+		}
+		return nil, fmt.Errorf("failed to read age keys: %w", err)
+	}
+
+	var keys []Key
+	var currentComment string
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		if strings.HasPrefix(line, "#") {
+			currentComment = strings.TrimPrefix(line, "# ")
+			continue
+		}
+
+		// Parse Age private key
+		if strings.HasPrefix(line, "AGE-SECRET-KEY-") {
+			identity, err := age.ParseX25519Identity(line)
+			if err != nil {
+				continue
+			}
+
+			key := Key{
+				Type:      "age",
+				PublicKey: identity.Recipient().String(),
+				Name:      currentComment,
+			}
+			keys = append(keys, key)
+			currentComment = ""
+		}
+	}
+
+	return keys, nil
+}
+
+// GetAgePublicKey returns the public key for an Age private key
+func GetAgePublicKey(privateKey string) (string, error) {
+	identity, err := age.ParseX25519Identity(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse age key: %w", err)
+	}
+
+	return identity.Recipient().String(), nil
+}
+
+// IsAgeInstalled checks if age is available in PATH
+func IsAgeInstalled() bool {
+	_, err := exec.LookPath("age")
 	return err == nil
 }

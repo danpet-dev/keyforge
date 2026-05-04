@@ -1,0 +1,17 @@
+.git
+.github
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+*.test
+*.out
+coverage.txt
+dist/
+keyforge
+*.asc
+secrets/
+.sops.yaml
+*.yaml.sops

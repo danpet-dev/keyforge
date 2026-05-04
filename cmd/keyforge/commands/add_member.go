@@ -31,9 +31,11 @@ Example:
 var (
 	addMemberName         string
 	addMemberEmail        string
+	addMemberKeyType      string
 	addMemberEnvironments string
 	addMemberGenerateKey  bool
 	addMemberFingerprint  string
+	addMemberPublicKey    string
 )
 
 func init() {
@@ -41,12 +43,13 @@ func init() {
 
 	addMemberCmd.Flags().StringVarP(&addMemberName, "name", "n", "", "Member name (required)")
 	addMemberCmd.Flags().StringVarP(&addMemberEmail, "email", "e", "", "Member email (required)")
+	addMemberCmd.Flags().StringVarP(&addMemberKeyType, "key-type", "t", "pgp", "Key type: pgp or age")
 	addMemberCmd.Flags().StringVarP(&addMemberEnvironments, "environments", "E", "all", "Environments (comma-separated: dev,test,prod or 'all')")
-	addMemberCmd.Flags().BoolVarP(&addMemberGenerateKey, "generate-key", "g", false, "Generate a new PGP key")
-	addMemberCmd.Flags().StringVarP(&addMemberFingerprint, "fingerprint", "f", "", "Use existing key fingerprint")
+	addMemberCmd.Flags().BoolVarP(&addMemberGenerateKey, "generate-key", "g", false, "Generate a new PGP or Age key")
+	addMemberCmd.Flags().StringVarP(&addMemberFingerprint, "fingerprint", "f", "", "Use existing PGP key fingerprint")
+	addMemberCmd.Flags().StringVarP(&addMemberPublicKey, "public-key", "p", "", "Use existing Age public key")
 
 	addMemberCmd.MarkFlagRequired("name")
-	addMemberCmd.MarkFlagRequired("email")
 }
 
 func runAddMember(cmd *cobra.Command, args []string) error {
@@ -55,44 +58,79 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf(".sops.yaml not found. Run 'keyforge init' first")
 	}
 
+	// Validate key type
+	if addMemberKeyType != "pgp" && addMemberKeyType != "age" {
+		return fmt.Errorf("invalid key-type: %s (must be 'pgp' or 'age')", addMemberKeyType)
+	}
+
 	// Check prerequisites
-	if !keys.IsGPGInstalled() {
+	if addMemberKeyType == "pgp" && !keys.IsGPGInstalled() {
 		return fmt.Errorf("GPG is not installed. Please install GPG first")
 	}
 
-	var fingerprint string
+	var keyValue string
 
 	// Generate or use existing key
 	if addMemberGenerateKey {
-		fmt.Printf("Generating PGP key for %s (%s)...\n", addMemberName, addMemberEmail)
-		fp, err := keys.GeneratePGPKey(addMemberName, addMemberEmail, 2)
-		if err != nil {
-			return fmt.Errorf("failed to generate PGP key: %w", err)
-		}
-		fingerprint = fp
-		fmt.Printf("✓ Generated PGP key: %s\n", fingerprint)
-	} else if addMemberFingerprint != "" {
-		fingerprint = addMemberFingerprint
-		fmt.Printf("Using existing key: %s\n", fingerprint)
-	} else {
-		// Search for key by email
-		keyList, err := keys.ListPGPKeys()
-		if err != nil {
-			return fmt.Errorf("failed to list PGP keys: %w", err)
-		}
-
-		found := false
-		for _, key := range keyList {
-			if key.Email == addMemberEmail {
-				fingerprint = key.Fingerprint
-				found = true
-				fmt.Printf("Found existing key: %s (%s)\n", fingerprint, addMemberEmail)
-				break
+		if addMemberKeyType == "pgp" {
+			if addMemberEmail == "" {
+				return fmt.Errorf("--email is required for PGP key generation")
 			}
-		}
+			fmt.Printf("Generating PGP key for %s (%s)...\n", addMemberName, addMemberEmail)
+			fp, err := keys.GeneratePGPKey(addMemberName, addMemberEmail, 2)
+			if err != nil {
+				return fmt.Errorf("failed to generate PGP key: %w", err)
+			}
+			keyValue = fp
+			fmt.Printf("✓ Generated PGP key: %s\n", keyValue)
+		} else if addMemberKeyType == "age" {
+			fmt.Printf("Generating Age key for %s...\n", addMemberName)
+			identity, err := keys.GenerateAgeKey()
+			if err != nil {
+				return fmt.Errorf("failed to generate Age key: %w", err)
+			}
+			
+			comment := fmt.Sprintf("%s - created by keyforge", addMemberName)
+			if err := keys.SaveAgeKey(identity, comment); err != nil {
+				return fmt.Errorf("failed to save Age key: %w", err)
+			}
 
-		if !found {
-			return fmt.Errorf("no key found for %s. Use --generate-key or --fingerprint", addMemberEmail)
+			keyValue = identity.Recipient().String()
+			fmt.Printf("✓ Generated Age key: %s\n", keyValue)
+			fmt.Printf("✓ Saved to ~/.config/sops/age/keys.txt\n")
+		}
+	} else if addMemberFingerprint != "" && addMemberKeyType == "pgp" {
+		keyValue = addMemberFingerprint
+		fmt.Printf("Using existing PGP key: %s\n", keyValue)
+	} else if addMemberPublicKey != "" && addMemberKeyType == "age" {
+		keyValue = addMemberPublicKey
+		fmt.Printf("Using existing Age key: %s\n", keyValue)
+	} else {
+		// Search for key
+		if addMemberKeyType == "pgp" {
+			if addMemberEmail == "" {
+				return fmt.Errorf("--email is required for PGP keys")
+			}
+			keyList, err := keys.ListPGPKeys()
+			if err != nil {
+				return fmt.Errorf("failed to list PGP keys: %w", err)
+			}
+
+			found := false
+			for _, key := range keyList {
+				if key.Email == addMemberEmail {
+					keyValue = key.Fingerprint
+					found = true
+					fmt.Printf("Found existing key: %s (%s)\n", keyValue, addMemberEmail)
+					break
+				}
+			}
+
+			if !found {
+				return fmt.Errorf("no key found for %s. Use --generate-key or --fingerprint", addMemberEmail)
+			}
+		} else if addMemberKeyType == "age" {
+			return fmt.Errorf("for Age keys, use --public-key or --generate-key")
 		}
 	}
 
@@ -128,18 +166,29 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 
 		if shouldUpdate {
 			// Check if key already exists
-			existingKeys := rule.GetPGPKeys()
-			keyExists := false
+			var existingKeys []string
+			var keyExists bool
+
+			if addMemberKeyType == "pgp" {
+				existingKeys = rule.GetPGPKeys()
+			} else {
+				existingKeys = rule.GetAgeKeys()
+			}
+
 			for _, existingKey := range existingKeys {
-				if existingKey == fingerprint {
+				if existingKey == keyValue {
 					keyExists = true
 					break
 				}
 			}
 
 			if !keyExists {
-				existingKeys = append(existingKeys, fingerprint)
-				rule.PGP = existingKeys
+				existingKeys = append(existingKeys, keyValue)
+				if addMemberKeyType == "pgp" {
+					rule.PGP = existingKeys
+				} else {
+					rule.Age = existingKeys
+				}
 				rulesUpdated++
 				fmt.Printf("✓ Added key to rule: %s\n", rule.PathRegex)
 			} else {
@@ -159,17 +208,22 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✓ Updated .sops.yaml (%d rules)\n", rulesUpdated)
 
-	// Export public key
-	publicKey, err := keys.ExportPublicKey(fingerprint)
-	if err != nil {
-		fmt.Printf("⚠️  Failed to export public key: %s\n", err)
-	} else {
-		keyFile := fmt.Sprintf("%s.asc", addMemberEmail)
-		if err := os.WriteFile(keyFile, []byte(publicKey), 0644); err != nil {
-			fmt.Printf("⚠️  Failed to write key file: %s\n", err)
+	// Export public key (PGP only)
+	if addMemberKeyType == "pgp" {
+		publicKey, err := keys.ExportPublicKey(keyValue)
+		if err != nil {
+			fmt.Printf("⚠️  Failed to export public key: %s\n", err)
 		} else {
-			fmt.Printf("✓ Exported public key: %s\n", keyFile)
+			keyFile := fmt.Sprintf("%s.asc", addMemberEmail)
+			if err := os.WriteFile(keyFile, []byte(publicKey), 0644); err != nil {
+				fmt.Printf("⚠️  Failed to write key file: %s\n", err)
+			} else {
+				fmt.Printf("✓ Exported public key: %s\n", keyFile)
+			}
 		}
+	} else if addMemberKeyType == "age" {
+		fmt.Printf("✓ Age public key: %s\n", keyValue)
+		fmt.Println("  Share this public key with team members who need to add you to their .sops.yaml")
 	}
 
 	// Update encrypted files
@@ -202,9 +256,14 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("\n✓ All files updated successfully")
 	fmt.Println("\nNext steps:")
-	fmt.Printf("  1. Share public key with %s: %s.asc\n", addMemberName, addMemberEmail)
-	fmt.Printf("  2. %s imports key: gpg --import %s.asc\n", addMemberName, addMemberEmail)
-	fmt.Println("  3. Commit .sops.yaml to git")
+	if addMemberKeyType == "pgp" && addMemberEmail != "" {
+		fmt.Printf("  1. Share public key with %s: %s.asc\n", addMemberName, addMemberEmail)
+		fmt.Printf("  2. %s imports key: gpg --import %s.asc\n", addMemberName, addMemberEmail)
+		fmt.Println("  3. Commit .sops.yaml to git")
+	} else {
+		fmt.Printf("  1. Share Age public key with %s: %s\n", addMemberName, keyValue)
+		fmt.Println("  2. Commit .sops.yaml to git")
+	}
 
 	return nil
 }
