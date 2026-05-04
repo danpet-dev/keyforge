@@ -1,3 +1,5 @@
+[![Tests](https://github.com/danpet-dev/keyforge/actions/workflows/test.yml/badge.svg)](https://github.com/danpet-dev/keyforge/actions/workflows/test.yml)
+
 # KeyForge
 
 **Forge your encryption keys with confidence**
