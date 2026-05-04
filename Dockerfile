@@ -1,5 +1,5 @@
 # Runtime stage only - GoReleaser provides the pre-built binary
-FROM alpine:latest
+FROM alpine:3.21
 
 # Install runtime dependencies
 RUN apk add --no-cache \
