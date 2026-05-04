@@ -77,7 +77,8 @@ func runValidate(cmd *cobra.Command, args []string) error {
 		for i, rule := range cfg.CreationRules {
 			fmt.Printf("\nRule %d: %s\n", i+1, rule.PathRegex)
 
-			for _, fp := range rule.PGP {
+			pgpKeys := rule.GetPGPKeys()
+			for _, fp := range pgpKeys {
 				key, exists := availableKeys[fp]
 				if !exists {
 					missingKeys = append(missingKeys, fp)

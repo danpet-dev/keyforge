@@ -24,8 +24,9 @@ func TestGenerateTemplate(t *testing.T) {
 		t.Errorf("Unexpected path regex: %s", cfg.CreationRules[0].PathRegex)
 	}
 
-	if len(cfg.CreationRules[0].PGP) != 2 {
-		t.Errorf("Expected 2 PGP keys in development rule, got %d", len(cfg.CreationRules[0].PGP))
+	pgpKeys := cfg.CreationRules[0].GetPGPKeys()
+	if len(pgpKeys) != 2 {
+		t.Errorf("Expected 2 PGP keys in development rule, got %d", len(pgpKeys))
 	}
 }
 
@@ -80,8 +81,9 @@ func TestAddKey(t *testing.T) {
 		t.Fatalf("Failed to add key: %v", err)
 	}
 
-	if len(cfg.CreationRules[0].PGP) != 2 {
-		t.Errorf("Expected 2 keys, got %d", len(cfg.CreationRules[0].PGP))
+	pgpKeys := cfg.CreationRules[0].GetPGPKeys()
+	if len(pgpKeys) != 2 {
+		t.Errorf("Expected 2 keys, got %d", len(pgpKeys))
 	}
 
 	// Test non-existent path

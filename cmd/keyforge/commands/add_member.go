@@ -128,8 +128,9 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 
 		if shouldUpdate {
 			// Check if key already exists
+			existingKeys := rule.GetPGPKeys()
 			keyExists := false
-			for _, existingKey := range rule.PGP {
+			for _, existingKey := range existingKeys {
 				if existingKey == fingerprint {
 					keyExists = true
 					break
@@ -137,7 +138,8 @@ func runAddMember(cmd *cobra.Command, args []string) error {
 			}
 
 			if !keyExists {
-				rule.PGP = append(rule.PGP, fingerprint)
+				existingKeys = append(existingKeys, fingerprint)
+				rule.PGP = existingKeys
 				rulesUpdated++
 				fmt.Printf("✓ Added key to rule: %s\n", rule.PathRegex)
 			} else {

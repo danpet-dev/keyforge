@@ -14,10 +14,44 @@ type SopsConfig struct {
 
 // CreationRule represents a single creation rule in .sops.yaml
 type CreationRule struct {
-	PathRegex      string   `yaml:"path_regex"`
-	PGP            []string `yaml:"pgp,omitempty"`
-	Age            []string `yaml:"age,omitempty"`
-	EncryptedRegex string   `yaml:"encrypted_regex,omitempty"`
+	PathRegex      string      `yaml:"path_regex"`
+	PGP            interface{} `yaml:"pgp,omitempty"`
+	Age            interface{} `yaml:"age,omitempty"`
+	EncryptedRegex string      `yaml:"encrypted_regex,omitempty"`
+}
+
+// GetPGPKeys returns PGP keys as a string slice (handles both string and []string)
+func (r *CreationRule) GetPGPKeys() []string {
+	return normalizeKeys(r.PGP)
+}
+
+// GetAgeKeys returns Age keys as a string slice (handles both string and []string)
+func (r *CreationRule) GetAgeKeys() []string {
+	return normalizeKeys(r.Age)
+}
+
+// normalizeKeys converts interface{} to []string (handles both string and []string)
+func normalizeKeys(keys interface{}) []string {
+	if keys == nil {
+		return []string{}
+	}
+
+	switch v := keys.(type) {
+	case string:
+		return []string{v}
+	case []interface{}:
+		result := make([]string, len(v))
+		for i, k := range v {
+			if str, ok := k.(string); ok {
+				result[i] = str
+			}
+		}
+		return result
+	case []string:
+		return v
+	default:
+		return []string{}
+	}
 }
 
 // Load reads and parses .sops.yaml from the given path
@@ -55,9 +89,13 @@ func (c *SopsConfig) AddKey(pathRegex, keyType, key string) error {
 		if c.CreationRules[i].PathRegex == pathRegex {
 			switch keyType {
 			case "pgp":
-				c.CreationRules[i].PGP = append(c.CreationRules[i].PGP, key)
+				existing := c.CreationRules[i].GetPGPKeys()
+				existing = append(existing, key)
+				c.CreationRules[i].PGP = existing
 			case "age":
-				c.CreationRules[i].Age = append(c.CreationRules[i].Age, key)
+				existing := c.CreationRules[i].GetAgeKeys()
+				existing = append(existing, key)
+				c.CreationRules[i].Age = existing
 			default:
 				return fmt.Errorf("unknown key type: %s", keyType)
 			}
