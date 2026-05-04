@@ -19,6 +19,13 @@ KeyForge is a CLI tool that simplifies SOPS multi-key lifecycle management. It a
 
 ## Installation
 
+### Homebrew (macOS and Linux)
+
+```bash
+brew tap danpet-dev/tap
+brew install keyforge
+```
+
 ### From Source
 
 ```bash
@@ -91,9 +98,9 @@ SOPS multi-key management can be complex and error-prone:
 
 ## Documentation
 
-- [Installation Guide](docs/installation.md) (Coming soon)
-- [Command Reference](docs/commands.md) (Coming soon)
-- [Quick Start Tutorial](docs/quickstart.md) (Coming soon)
+- [Roadmap](ROADMAP.md) - Planned features and releases
+- [Changelog](CHANGELOG.md) - Release history and changes
+- [Contributing](CONTRIBUTING.md) - How to contribute
 
 ## Use Cases
 
@@ -103,16 +110,22 @@ KeyForge is used in production by [NornForge](https://github.com/danpet-dev/Norn
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
+Check out the [Roadmap](ROADMAP.md) to see what's planned and pick up a feature to work on!
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Status
+## Project Status
 
-**Current Version:** v0.2.0
+**Current Version:** v0.2.2
 
 - ✅ **MVP Complete** (v0.1.0): init, add-member, update-all, validate, edit
 - ✅ **Enhanced Features** (v0.2.0): Age key support, rotate-keys, audit, Docker image
-- 🚧 **In Development**: Comprehensive documentation, integration tests
+- ✅ **CI/CD Stability** (v0.2.1): Go 1.26 compatibility, code quality
+- ✅ **Homebrew Support** (v0.2.2): Easy installation via Homebrew
+- 🚀 **Next Up** (v0.3.0): keys list, remove-member, status, decrypt, encrypt, diff
+
+See [ROADMAP.md](ROADMAP.md) for the full development roadmap.
 
 See [CHANGELOG.md](CHANGELOG.md) for full release history.
