@@ -1,0 +1,37 @@
+# Binaries
+keyforge
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Coverage
+*.out
+coverage.txt
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dist (Goreleaser)
+dist/
+
+# Local testing
+test-*
+*.asc
+.sops.yaml
+secrets/

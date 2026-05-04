@@ -1,0 +1,65 @@
+project_name: keyforge
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: keyforge
+    main: ./cmd/keyforge
+    binary: keyforge
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+archives:
+  - id: keyforge
+    name_template: 'keyforge_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - CONTRIBUTING.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ .Tag }}-snapshot"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+
+release:
+  github:
+    owner: danpet-dev
+    name: keyforge
+  draft: false
+  prerelease: auto
+
+brews:
+  - name: keyforge
+    repository:
+      owner: danpet-dev
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://github.com/danpet-dev/keyforge
+    description: SOPS multi-key lifecycle management CLI
+    license: MIT
