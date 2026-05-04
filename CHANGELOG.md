@@ -5,6 +5,27 @@ All notable changes to KeyForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-04
+
+### Fixed
+- **CI/CD Compatibility**: Fixed golangci-lint compatibility with Go 1.26
+  - Changed lint job to build golangci-lint from source with Go 1.26
+  - Ensures linter and project use the same Go version
+  - Resolves "Go language version mismatch" errors
+  
+- **Code Quality**: Resolved all golangci-lint violations
+  - Fixed errcheck: Proper error handling for file operations (Close, WriteString, Remove)
+  - Fixed errcheck: Error checking for os.Setenv in tests
+  - Fixed errcheck: Cobra MarkFlagRequired error handling
+  - Fixed gofmt: Formatted all source files consistently
+  
+### Changed
+- GitHub Actions lint job now uses `go install` for golangci-lint
+- Enabled Go module caching in CI for faster builds
+
+### Technical Details
+This patch release focuses on CI/CD stability and code quality. All changes are internal - no user-facing functionality changed.
+
 ## [0.2.0] - 2026-05-04
 
 ### Added
@@ -103,6 +124,17 @@ First stable release of KeyForge! This MVP includes all essential commands for m
 
 ## Upgrade Guide
 
+### From v0.2.0 to v0.2.1
+
+No breaking changes or user-facing changes. This is a CI/CD and code quality patch release.
+
+**Docker users:**
+```bash
+docker pull ghcr.io/danpet-dev/keyforge:0.2.1
+# or use 'latest' tag
+docker pull ghcr.io/danpet-dev/keyforge:latest
+```
+
 ### From v0.1.0 to v0.2.0
 
 No breaking changes. All v0.1.0 commands continue to work.
@@ -124,5 +156,6 @@ keyforge rotate-keys --key-type age
 docker pull ghcr.io/danpet-dev/keyforge:0.2.0
 ```
 
+[0.2.1]: https://github.com/danpet-dev/keyforge/releases/tag/v0.2.1
 [0.2.0]: https://github.com/danpet-dev/keyforge/releases/tag/v0.2.0
 [0.1.0]: https://github.com/danpet-dev/keyforge/releases/tag/v0.1.0
