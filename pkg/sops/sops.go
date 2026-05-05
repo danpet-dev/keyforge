@@ -94,3 +94,45 @@ func GetSopsVersion() (string, error) {
 	version := strings.TrimSpace(string(output))
 	return version, nil
 }
+
+// Decrypt decrypts a SOPS file and returns the plaintext content
+func Decrypt(file string) ([]byte, error) {
+	// Auto-detect input type
+	inputType := "yaml"
+	if strings.Contains(file, ".json.sops") {
+		inputType = "json"
+	} else if strings.Contains(file, ".env.sops") {
+		inputType = "dotenv"
+	}
+
+	cmd := exec.Command("sops", "--decrypt", "--input-type", inputType, "--output-type", inputType, file)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("sops decrypt failed for %s: %w\n%s", file, err, string(output))
+	}
+
+	return output, nil
+}
+
+// Encrypt encrypts a plaintext file with SOPS
+func Encrypt(file string) error {
+	// Auto-detect input type
+	inputType := "yaml"
+	if strings.HasSuffix(file, ".json") {
+		inputType = "json"
+	} else if strings.HasSuffix(file, ".env") {
+		inputType = "dotenv"
+	}
+
+	outputFile := file + ".sops"
+
+	cmd := exec.Command("sops", "--encrypt", "--input-type", inputType, "--output", outputFile, file)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("sops encrypt failed for %s: %w", file, err)
+	}
+
+	return nil
+}
