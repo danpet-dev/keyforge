@@ -5,6 +5,90 @@ All notable changes to KeyForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-05
+
+### Added - Essential Commands (Must-Have)
+- **`keyforge keys list`**: List all encryption keys (PGP and Age)
+  - Filter by type: `--type pgp|age`
+  - Output formats: `--format text|json`
+  - Shows key details: fingerprint, name, email, expiration (PGP) or public key (Age)
+  - Expiration warnings for PGP keys
+  - Closes #1
+
+- **`keyforge remove-member`**: Remove team members from .sops.yaml
+  - Remove by `--email`, `--fingerprint`, or `--public-key`
+  - Shows affected environments
+  - Security warning about re-encryption
+  - Enhanced `normalizeKeys()` to handle comma-separated keys in YAML
+  - Closes #2
+
+- **`keyforge status`**: Comprehensive secrets state overview
+  - Validates .sops.yaml syntax and structure
+  - Lists encrypted files (.sops)
+  - Detects decrypted plaintext files (security risk)
+  - Checks if plaintext files are in .gitignore
+  - Shows update keys status
+  - Colorized output with clear warnings
+  - Verbose mode: `--verbose` for detailed information
+  - Closes #3
+
+### Added - Essential Commands (Should-Have)
+- **`keyforge decrypt`**: Decrypt SOPS-encrypted files
+  - Decrypt to stdout (default) or file (`--output`)
+  - In-place decryption (`--in-place`, removes .sops extension)
+  - Security warnings for plaintext secrets
+  - .gitignore validation
+  - Format detection (yaml, json, env)
+  - Closes #4
+
+- **`keyforge encrypt`**: Encrypt files with SOPS
+  - Auto-detection of input format (yaml/json/env)
+  - Custom output file (`--output`)
+  - In-place encryption (`--in-place`, replaces original)
+  - .sops.yaml validation before encryption
+  - Helpful next steps after encryption
+  - Closes #5
+
+- **`keyforge diff`**: Compare encrypted files
+  - Compare two encrypted files (decrypts in memory)
+  - Compare encrypted with plaintext
+  - Uses system diff tool (with fallback)
+  - Secure: never writes plaintext to permanent disk storage
+  - Clear indication when files are identical
+  - Closes #6
+
+### Changed
+- Fixed .gitignore to use `/keyforge` instead of `keyforge` to prevent ignoring `cmd/keyforge/` directory
+- Enhanced config package with `RemoveKey()` function for key removal
+- Enhanced `normalizeKeys()` to parse comma-separated strings in YAML (folded scalars)
+- Added `Decrypt()` and `EncryptFile()` functions in pkg/sops package
+- Improved SOPS command execution with proper input/output type flags
+
+### Infrastructure
+- All commands include comprehensive tests
+- GitHub Milestone: v0.3.0 - Essential Commands
+- Target date: Q2 2026
+
+### Installation
+```bash
+# Homebrew (recommended)
+brew install danpet-dev/tap/keyforge
+
+# Docker
+docker pull ghcr.io/danpet-dev/keyforge:0.3.0
+
+# Go Install
+go install github.com/danpet-dev/keyforge/cmd/keyforge@v0.3.0
+
+# Binary Download
+# Visit https://github.com/danpet-dev/keyforge/releases/tag/v0.3.0
+```
+
+### Upgrade Notes
+- No breaking changes
+- All v0.1.0, v0.2.0, and v0.2.1 commands remain functional
+- New commands are additive only
+
 ## [0.2.2] - 2026-05-04
 
 ### Added
