@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -38,12 +39,24 @@ func normalizeKeys(keys interface{}) []string {
 
 	switch v := keys.(type) {
 	case string:
-		return []string{v}
+		// Handle comma-separated strings (common in YAML with folded scalars)
+		if strings.Contains(v, ",") {
+			parts := strings.Split(v, ",")
+			result := []string{}
+			for _, part := range parts {
+				trimmed := strings.TrimSpace(part)
+				if trimmed != "" {
+					result = append(result, trimmed)
+				}
+			}
+			return result
+		}
+		return []string{strings.TrimSpace(v)}
 	case []interface{}:
 		result := make([]string, len(v))
 		for i, k := range v {
 			if str, ok := k.(string); ok {
-				result[i] = str
+				result[i] = strings.TrimSpace(str)
 			}
 		}
 		return result
@@ -104,6 +117,65 @@ func (c *SopsConfig) AddKey(pathRegex, keyType, key string) error {
 	}
 
 	return fmt.Errorf("path regex not found: %s", pathRegex)
+}
+
+// RemoveKey removes a PGP or Age key from all creation rules
+// Returns a map of path_regex -> bool indicating which rules were affected
+func (c *SopsConfig) RemoveKey(keyType, key string) map[string]bool {
+	affectedRules := make(map[string]bool)
+
+	for i := range c.CreationRules {
+		removed := false
+
+		switch keyType {
+		case "pgp":
+			existing := c.CreationRules[i].GetPGPKeys()
+			filtered := []string{}
+			for _, k := range existing {
+				if k != key {
+					filtered = append(filtered, k)
+				} else {
+					removed = true
+				}
+			}
+			if removed {
+				if len(filtered) > 0 {
+					c.CreationRules[i].PGP = filtered
+				} else {
+					c.CreationRules[i].PGP = nil
+				}
+				affectedRules[c.CreationRules[i].PathRegex] = true
+			}
+
+		case "age":
+			existing := c.CreationRules[i].GetAgeKeys()
+			filtered := []string{}
+			for _, k := range existing {
+				if k != key {
+					filtered = append(filtered, k)
+				} else {
+					removed = true
+				}
+			}
+			if removed {
+				if len(filtered) > 0 {
+					c.CreationRules[i].Age = filtered
+				} else {
+					c.CreationRules[i].Age = nil
+				}
+				affectedRules[c.CreationRules[i].PathRegex] = true
+			}
+		}
+	}
+
+	return affectedRules
+}
+
+// FindKeyByEmail finds a PGP key in the config by email
+func (c *SopsConfig) FindKeyByEmail(email string) (string, bool) {
+	// This requires matching against keys.ListPGPKeys()
+	// We'll implement this in the command layer
+	return "", false
 }
 
 // GenerateTemplate creates a new .sops.yaml with best-practice structure
