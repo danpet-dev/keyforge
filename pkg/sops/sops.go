@@ -136,3 +136,22 @@ func Encrypt(file string) error {
 
 	return nil
 }
+
+// EncryptFile encrypts a plaintext file with SOPS to a specific output file
+func EncryptFile(inputFile, outputFile string) error {
+	// Auto-detect input type
+	inputType := "yaml"
+	if strings.HasSuffix(inputFile, ".json") {
+		inputType = "json"
+	} else if strings.HasSuffix(inputFile, ".env") {
+		inputType = "dotenv"
+	}
+
+	cmd := exec.Command("sops", "--encrypt", "--input-type", inputType, "--output", outputFile, inputFile)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("sops encrypt failed for %s: %w\n%s", inputFile, err, string(output))
+	}
+
+	return nil
+}
