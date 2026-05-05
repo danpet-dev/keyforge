@@ -1,5 +1,5 @@
 # Binaries
-keyforge
+/keyforge
 *.exe
 *.dll
 *.so
