@@ -36,7 +36,7 @@ Example:
 }
 
 var (
-	removeMemberEmail      string
+	removeMemberEmail       string
 	removeMemberFingerprint string
 	removeMemberPublicKey   string
 )

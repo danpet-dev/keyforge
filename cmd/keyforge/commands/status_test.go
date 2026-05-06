@@ -9,9 +9,7 @@ import (
 func TestStatusCommand(t *testing.T) {
 	t.Run("no .sops.yaml", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		// Should not error, just show warning
 		err := runStatus(nil, []string{})
@@ -22,15 +20,13 @@ func TestStatusCommand(t *testing.T) {
 
 	t.Run("valid .sops.yaml with no files", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		content := `creation_rules:
   - path_regex: secrets/.*\.yaml\.sops$
     pgp: KEY1
 `
-		if err := os.WriteFile(".sops.yaml", []byte(content), 0644); err != nil {
+		if err := os.WriteFile(".sops.yaml", []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create .sops.yaml: %v", err)
 		}
 
@@ -42,21 +38,23 @@ func TestStatusCommand(t *testing.T) {
 
 	t.Run("encrypted files found", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		content := `creation_rules:
   - path_regex: secrets/.*\.yaml\.sops$
     pgp: KEY1
 `
-		if err := os.WriteFile(".sops.yaml", []byte(content), 0644); err != nil {
+		if err := os.WriteFile(".sops.yaml", []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create .sops.yaml: %v", err)
 		}
 
 		// Create encrypted files
-		os.MkdirAll("secrets", 0755)
-		os.WriteFile("secrets/dev.yaml.sops", []byte("encrypted"), 0644)
+		if err := os.MkdirAll("secrets", 0o755); err != nil {
+			t.Fatalf("Failed to create secrets directory: %v", err)
+		}
+		if err := os.WriteFile("secrets/dev.yaml.sops", []byte("encrypted"), 0o644); err != nil {
+			t.Fatalf("Failed to write encrypted file: %v", err)
+		}
 
 		err := runStatus(nil, []string{})
 		if err != nil {
@@ -90,8 +88,12 @@ func TestFindDecryptedFiles(t *testing.T) {
 		plainFile := filepath.Join(tempDir, "test.yaml")
 
 		// Create both files
-		os.WriteFile(encFile, []byte("encrypted"), 0644)
-		os.WriteFile(plainFile, []byte("plain"), 0644)
+		if err := os.WriteFile(encFile, []byte("encrypted"), 0o644); err != nil {
+			t.Fatalf("Failed to write encrypted test file: %v", err)
+		}
+		if err := os.WriteFile(plainFile, []byte("plain"), 0o644); err != nil {
+			t.Fatalf("Failed to write plaintext test file: %v", err)
+		}
 
 		result := findDecryptedFiles([]string{encFile})
 		if len(result) != 1 {
@@ -106,7 +108,9 @@ func TestFindDecryptedFiles(t *testing.T) {
 		tempDir := t.TempDir()
 
 		encFile := filepath.Join(tempDir, "test.yaml.sops")
-		os.WriteFile(encFile, []byte("encrypted"), 0644)
+		if err := os.WriteFile(encFile, []byte("encrypted"), 0o644); err != nil {
+			t.Fatalf("Failed to write encrypted test file: %v", err)
+		}
 
 		result := findDecryptedFiles([]string{encFile})
 		if len(result) != 0 {
@@ -125,9 +129,7 @@ func TestCheckGitignore(t *testing.T) {
 
 	t.Run("no .gitignore file", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		decrypted := []string{"secrets/dev.yaml"}
 		result := checkGitignore(decrypted)
@@ -139,13 +141,13 @@ func TestCheckGitignore(t *testing.T) {
 
 	t.Run("file in .gitignore", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		// Create .gitignore
 		gitignoreContent := "secrets/dev.yaml\n*.log\n"
-		os.WriteFile(".gitignore", []byte(gitignoreContent), 0644)
+		if err := os.WriteFile(".gitignore", []byte(gitignoreContent), 0o644); err != nil {
+			t.Fatalf("Failed to write .gitignore: %v", err)
+		}
 
 		decrypted := []string{"secrets/dev.yaml"}
 		result := checkGitignore(decrypted)
@@ -157,13 +159,13 @@ func TestCheckGitignore(t *testing.T) {
 
 	t.Run("file not in .gitignore", func(t *testing.T) {
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		// Create .gitignore
 		gitignoreContent := "*.log\n"
-		os.WriteFile(".gitignore", []byte(gitignoreContent), 0644)
+		if err := os.WriteFile(".gitignore", []byte(gitignoreContent), 0o644); err != nil {
+			t.Fatalf("Failed to write .gitignore: %v", err)
+		}
 
 		decrypted := []string{"secrets/dev.yaml"}
 		result := checkGitignore(decrypted)

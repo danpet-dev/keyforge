@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	decryptOutput string
-	decryptFormat string
+	decryptOutput  string
+	decryptFormat  string
 	decryptInPlace bool
 )
 
@@ -111,7 +111,7 @@ func runDecrypt(cmd *cobra.Command, args []string) error {
 		}
 
 		fmt.Printf("✅ Decrypted: %s → %s\n", inputFile, outputFile)
-		
+
 		// Security warning
 		fmt.Printf("\n⚠️  Security Warning:\n")
 		fmt.Printf("   %s contains plaintext secrets!\n", outputFile)
@@ -134,7 +134,7 @@ func runDecrypt(cmd *cobra.Command, args []string) error {
 
 func detectFormat(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	// Remove .sops extension if present
 	if ext == ".sops" {
 		filename = strings.TrimSuffix(filename, ext)

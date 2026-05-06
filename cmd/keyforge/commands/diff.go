@@ -139,7 +139,7 @@ func showDiffWithTempFiles(file1, file2 string, content1, content2 []byte) error
 		cmd := exec.Command("diff", "-u", "--label", file1, "--label", file2, tmp1.Name(), tmp2.Name())
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		
+
 		// diff returns exit code 1 if files differ, which is not an error
 		if err := cmd.Run(); err != nil {
 			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {

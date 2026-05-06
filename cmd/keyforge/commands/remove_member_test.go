@@ -6,6 +6,27 @@ import (
 	"testing"
 )
 
+// chdirForTest changes to the specified directory for the duration of the test.
+// It automatically restores the original directory when the test completes.
+func chdirForTest(t *testing.T, dir string) {
+	t.Helper()
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change working directory: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+}
+
 func TestRemoveMemberCommand(t *testing.T) {
 	t.Run("no flags provided", func(t *testing.T) {
 		// Save and restore flags
@@ -29,14 +50,12 @@ func TestRemoveMemberCommand(t *testing.T) {
   - path_regex: test\.yaml\.sops$
     pgp: KEY1
 `
-		if err := os.WriteFile(sopsFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(sopsFile, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create temp .sops.yaml: %v", err)
 		}
 
 		// Change to temp dir
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		err := runRemoveMember(nil, []string{})
 
@@ -67,13 +86,11 @@ func TestRemoveMemberCommand(t *testing.T) {
   - path_regex: test\.yaml\.sops$
     pgp: KEY1
 `
-		if err := os.WriteFile(sopsFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(sopsFile, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create temp .sops.yaml: %v", err)
 		}
 
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		err := runRemoveMember(nil, []string{})
 
@@ -95,9 +112,7 @@ func TestRemoveMemberCommand(t *testing.T) {
 		removeMemberPublicKey = ""
 
 		tempDir := t.TempDir()
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		err := runRemoveMember(nil, []string{})
 
@@ -124,13 +139,11 @@ func TestRemoveMemberCommand(t *testing.T) {
   - path_regex: test\.yaml\.sops$
     pgp: KEY1
 `
-		if err := os.WriteFile(sopsFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(sopsFile, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create temp .sops.yaml: %v", err)
 		}
 
-		origDir, _ := os.Getwd()
-		defer os.Chdir(origDir)
-		os.Chdir(tempDir)
+		chdirForTest(t, tempDir)
 
 		err := runRemoveMember(nil, []string{})
 
