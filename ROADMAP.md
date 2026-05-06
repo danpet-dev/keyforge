@@ -32,58 +32,41 @@ KeyForge aims to be the **definitive CLI tool** for SOPS multi-key lifecycle man
 - ✅ Homebrew tap for macOS and Linux
 - ✅ Auto-installation of dependencies
 
+### v0.3.0 - Essential Commands (2026-05-05)
+- ✅ `keys list` - Central overview of all available keys
+- ✅ `remove-member` - Team offboarding
+- ✅ `status` - Quick overview of secrets state
+- ✅ `decrypt` - Simplified decryption
+- ✅ `encrypt` - Simplified encryption
+- ✅ `diff` - Code reviews for encrypted files
+
+### v0.3.1 - CI/CD Compatibility (2026-05-06)
+- ✅ Fixed golangci-lint errcheck violations
+- ✅ Improved error handling in defer statements
+- ✅ CI badge passing (green)
+
 ---
 
 ## 🚀 In Progress
 
-### v0.3.0 - Essential Commands (Target: Q2 2026)
+### v0.4.0 - Team Collaboration (Target: Q3 2026)
 
-**Theme:** Daily workflow essentials - the commands you'll use every day.
+**Theme:** Making team-based secret management seamless.
 
-#### Must-Have Features
-- [ ] **`keyforge keys list`** - Central overview of all available keys
-  - List all PGP and Age keys
-  - Show expiration dates for PGP keys
-  - JSON output for scripting
-  - Filter by key type (`--type pgp|age`)
+- [ ] **`keyforge sync`** - Team key synchronization (#7)
+  - Detect missing keys for full access
+  - Generate import instructions for team members
+  - Support key exchange workflows
   
-- [ ] **`keyforge remove-member`** - Team offboarding
-  - Remove keys from .sops.yaml by email/fingerprint/public-key
-  - Show which environments are affected
-  - Warn that existing files can still be decrypted
-  - Suggest key rotation workflow
-
-- [ ] **`keyforge status`** - Quick overview of secrets state
-  - List encrypted vs decrypted files
-  - Show which files need updatekeys
-  - Validate .sops.yaml
-  - Check for plaintext secrets in working directory
-  - Warn about files not in .gitignore
-
-#### Should-Have Features
-- [ ] **`keyforge decrypt`** - Simplified decryption
-  - Auto-detect format (yaml/json/env)
-  - Auto-remove .sops suffix from output
-  - Bulk operations support
-  - Consistent UX with KeyForge conventions
-
-- [ ] **`keyforge encrypt`** - Simplified encryption
-  - Auto-detect format
-  - Auto-add .sops suffix
-  - Bulk operations support
-  - Validate against .sops.yaml rules
-
-- [ ] **`keyforge diff`** - Code reviews for encrypted files
-  - Show readable diff of encrypted files
-  - Support git revisions (HEAD, HEAD~3, etc.)
-  - Support `--staged` for pre-commit review
-  - Colorized output
-
-#### Documentation & Testing
-- [ ] Comprehensive tests for all new commands
-- [ ] Updated README with new commands
-- [ ] CLI help text and examples
-- [ ] GitHub Actions workflow tests
+- [ ] **`keyforge template`** - Secret templates (#8)
+  - Create reusable secret templates
+  - Fill templates with values
+  - Ensure consistent secret structure across environments
+  
+- [ ] **`keyforge import/export`** - Migration helpers (#9)
+  - Import from: .env, Kubernetes Secrets, Vault, AWS Secrets Manager
+  - Export to: .env, Kubernetes manifests, JSON, YAML
+  - Support for bulk migrations
 
 ---
 
@@ -107,6 +90,10 @@ KeyForge aims to be the **definitive CLI tool** for SOPS multi-key lifecycle man
   - Import from: .env, Kubernetes Secrets, Vault, AWS Secrets Manager
   - Export to: .env, Kubernetes manifests, JSON, YAML
   - Support for bulk migrations
+
+---
+
+## 📅 Planned
 
 ### v0.5.0 - CI/CD Integration (Target: Q4 2026)
 
