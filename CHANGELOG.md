@@ -5,6 +5,21 @@ All notable changes to KeyForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-05-06
+
+### Fixed
+- **CI/CD Compatibility**: Fixed golangci-lint errcheck violations
+  - Handle error returns in `diff.go` defer statements (os.Remove, Close)
+  - Check Close() errors explicitly before passing temp files to diff command
+  - Handle w.Close() errors in test output capture (keys_test.go)
+  - Wrap defer cleanup operations in anonymous functions with `_ = ...`
+  - All tests passing, CI badge now green
+
+### Technical Details
+- Commit: 8f072fa
+- All golangci-lint checks passing
+- No functional changes, only error handling improvements
+
 ## [0.3.0] - 2026-05-05
 
 ### Added - Essential Commands (Must-Have)
