@@ -112,15 +112,23 @@ func showDiffWithTempFiles(file1, file2 string, content1, content2 []byte) error
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(tmp1.Name())
-	defer tmp1.Close()
+	defer func() {
+		_ = os.Remove(tmp1.Name())
+	}()
+	defer func() {
+		_ = tmp1.Close()
+	}()
 
 	tmp2, err := os.CreateTemp("", "keyforge-diff-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(tmp2.Name())
-	defer tmp2.Close()
+	defer func() {
+		_ = os.Remove(tmp2.Name())
+	}()
+	defer func() {
+		_ = tmp2.Close()
+	}()
 
 	// Write contents
 	if _, err := tmp1.Write(content1); err != nil {
@@ -131,8 +139,12 @@ func showDiffWithTempFiles(file1, file2 string, content1, content2 []byte) error
 	}
 
 	// Close files before reading
-	tmp1.Close()
-	tmp2.Close()
+	if err := tmp1.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if err := tmp2.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
 
 	// Try system diff
 	if _, err := exec.LookPath("diff"); err == nil {

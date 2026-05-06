@@ -61,7 +61,9 @@ func TestOutputKeysJSON(t *testing.T) {
 
 	err := outputKeysJSON(mockKeys)
 
-	w.Close()
+	if closeErr := w.Close(); closeErr != nil {
+		t.Fatalf("failed to close pipe: %v", closeErr)
+	}
 	os.Stdout = oldStdout
 
 	if err != nil {
@@ -105,7 +107,9 @@ func TestOutputKeysText(t *testing.T) {
 
 	err := outputKeysText(mockKeys)
 
-	w.Close()
+	if closeErr := w.Close(); closeErr != nil {
+		t.Fatalf("failed to close pipe: %v", closeErr)
+	}
 	os.Stdout = oldStdout
 
 	if err != nil {
